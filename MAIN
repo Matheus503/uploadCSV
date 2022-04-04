@@ -1,0 +1,139 @@
+*&---------------------------------------------------------------------*
+*& Report ZUPLOAD_DADOS_CSV
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+INCLUDE ZUPLOAD_DADOS_CSV_TOP.
+INCLUDE ZUPLOAD_DADOS_CSV_SCR.
+
+AT SELECTION-SCREEN  ON VALUE-REQUEST FOR P_FILE.
+  PERFORM F_SELECIONA_ARQUIVO.
+
+START-OF-SELECTION.
+  PERFORM F_UPLOAD.
+*&---------------------------------------------------------------------*
+*& Form F_SELECIONA_ARQUIVO
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM F_SELECIONA_ARQUIVO .
+
+CALL FUNCTION 'KD_GET_FILENAME_ON_F4'
+ EXPORTING
+   FIELD_NAME          = P_FILE
+  CHANGING
+    FILE_NAME           = P_FILE
+*   LOCATION_FLAG       = 'P'
+ EXCEPTIONS
+   MASK_TOO_LONG       = 1
+   OTHERS              = 2.
+IF SY-SUBRC <> 0.
+  MESSAGE TEXT-001 TYPE 'I'. "Erro na selecao do arquivo
+ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form F_UPLOAD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM F_UPLOAD .
+  DATA VL_FILENAME TYPE STRING.
+
+  FIELD-SYMBOLS <TABELA> TYPE STANDARD TABLE.
+
+       VL_FILENAME = P_FILE.
+
+       IF P_TXT = 'X'.
+         ASSIGN T_TXT TO <TABELA>.
+       ELSE.
+         ASSIGN T_CSV TO <TABELA>.
+       ENDIF.
+
+  CALL FUNCTION 'GUI_UPLOAD'
+    EXPORTING
+      FILENAME                      = VL_FILENAME
+      FILETYPE                      = 'ASC'
+    TABLES
+      DATA_TAB                      = <TABELA>
+   EXCEPTIONS
+     FILE_OPEN_ERROR               = 1
+     FILE_READ_ERROR               = 2
+     NO_BATCH                      = 3
+     GUI_REFUSE_FILETRANSFER       = 4
+     INVALID_TYPE                  = 5
+     NO_AUTHORITY                  = 6
+     UNKNOWN_ERROR                 = 7
+     BAD_DATA_FORMAT               = 8
+     HEADER_NOT_ALLOWED            = 9
+     SEPARATOR_NOT_ALLOWED         = 10
+     HEADER_TOO_LONG               = 11
+     UNKNOWN_DP_ERROR              = 12
+     ACCESS_DENIED                 = 13
+     DP_OUT_OF_MEMORY              = 14
+     DISK_FULL                     = 15
+     DP_TIMEOUT                    = 16
+     OTHERS                        = 17.
+  IF SY-SUBRC <> 0.
+    MESSAGE TEXT-002 TYPE 'I'. "Arquivo Invalido
+  ENDIF.
+
+  IF P_CSV = 'X'.
+
+  CLEAR: gv_answer.
+    CALL FUNCTION 'POPUP_TO_CONFIRM' " Funcao de confirmacao
+      EXPORTING
+        titlebar              = text-t01 "Confirmação
+        text_question         = text-t05 "'Deseja realmente restaurar os dados?'
+        text_button_1         = text-t03 "'Sim'
+        icon_button_1         = 'ICON_CHECKED'
+        text_button_2         = text-t04 "'Não'
+        icon_button_2         = 'ICON_INCOMPLETE'
+        display_cancel_button = ' '
+      IMPORTING
+        answer                = gv_answer
+      EXCEPTIONS
+        text_not_found        = 1
+        OTHERS                = 2.
+    IF gv_answer EQ '2'.
+      RETURN.
+    ENDIF.
+
+    LOOP AT <TABELA> INTO LS_CSV.
+
+      SPLIT LS_CSV AT ';' INTO LS_TXT-DOCNUM         LS_TXT-NFTYPE         LS_TXT-DOCTYP           LS_TXT-DIRECT            LS_TXT-DOCDAT          LS_TXT-PSTDAT          LS_TXT-CREDAT         LS_TXT-CRETIM
+                              LS_TXT-CRENAM         LS_TXT-CHADAT         LS_TXT-CHATIM           LS_TXT-CHANAM            LS_TXT-FORM            LS_TXT-MODEL           LS_TXT-SERIES         LS_TXT-SUBSER      LS_TXT-NFNUM LS_TXT-ENTRAD
+                              LS_TXT-FATURA         LS_TXT-ZTERM          LS_TXT-PRINTD           LS_TXT-MANUAL            LS_TXT-FOLLOW          LS_TXT-WAERK           LS_TXT-BELNR          LS_TXT-GJAHR       LS_TXT-BUKRS LS_TXT-BRANCH  LS_TXT-PARVW
+                              LS_TXT-PARID          LS_TXT-PARXCPDK       LS_TXT-PARTYP           LS_TXT-CANCEL            LS_TXT-CANDAT          LS_TXT-SUBSEQ          LS_TXT-DOCREF         LS_TXT-TRATY       LS_TXT-TRAID LS_TXT-INCO1 LS_TXT-INCO2
+                              LS_TXT-SHPUNT         LS_TXT-ANZPK          LS_TXT-SHPMRK           LS_TXT-SHPNUM            LS_TXT-BRGEW           LS_TXT-NTGEW           LS_TXT-GEWEI          LS_TXT-ZFBDT       LS_TXT-WITHA LS_TXT-OBSERVAT  LS_TXT-VSTEL
+                              LS_TXT-NFDEC          LS_TXT-NFTOT          LS_TXT-AWSYS            LS_TXT-PREFNO            LS_TXT-CHECOD          LS_TXT-NFE             LS_TXT-NFENUM         LS_TXT-NFESRV      LS_TXT-CONTING LS_TXT-AUTHCOD
+                              LS_TXT-DOCSTAT        LS_TXT-XMLVERS        LS_TXT-NFENRNR          LS_TXT-CODE              LS_TXT-ANRED           LS_TXT-NAME1           LS_TXT-NAME2          LS_TXT-NAME3       LS_TXT-NAME4 LS_TXT-STRAS LS_TXT-ORT01
+                              LS_TXT-ORT02          LS_TXT-REGIO          LS_TXT-LAND1            LS_TXT-PSTLZ             LS_TXT-PFACH           LS_TXT-PSTL2           LS_TXT-SORTL          LS_TXT-SPRAS       LS_TXT-TELF1 LS_TXT-TELFX LS_TXT-TELTX
+                              LS_TXT-TELX1
+                              LS_TXT-INDUST         LS_TXT-STKZN          LS_TXT-CGC              LS_TXT-CPF               LS_TXT-STAINS          LS_TXT-MUNINS          LS_TXT-TXJCD          LS_TXT-HAUSN       LS_TXT-STOCK LS_TXT-STREET  LS_TXT-HOUSE_NUM1
+                              LS_TXT-HOUSE_NUM2     LS_TXT-IND_IEDEST     LS_TXT-FOREIGNID        LS_TXT-SMTP_ADDR         LS_TXT-AUTHDATE        LS_TXT-AUTHTIME        LS_TXT-BAPI_FLAG      LS_TXT-SERV_TP
+                              LS_TXT-CTE_STRT_LCT   LS_TXT-CTE_END_LCT    LS_TXT-MAIN_PRODUCT     LS_TXT-RCVR_WDW          LS_TXT-PLN_DT_DLV      LS_TXT-FTL_IND         LS_TXT-VOL_TRANSP     LS_TXT-VOL_UNIT
+                              LS_TXT-TOTAL_REF_AMT  LS_TXT-TRANSP_MODE    LS_TXT-CRE_TIMESTAMP    LS_TXT-CTE_PARTNER       LS_TXT-CTE_SERV_TAKER  LS_TXT-CTE_TYPE        LS_TXT-AUTOM_INCOMING
+                              LS_TXT-DOCNUM_NEXT    LS_TXT-DOCNUM_PREV    LS_TXT-MUNICIPAL        LS_TXT-NATOP             LS_TXT-INDPAG          LS_TXT-DSAIENT         LS_TXT-HSAIENT        LS_TXT-CNPJ_BUPLA  LS_TXT-IE_BUPLA
+                              LS_TXT-IEST_BUPLA     LS_TXT-IEST_PARTNER   LS_TXT-IM_BUPLA         LS_TXT-CNAE_BUPLA        LS_TXT-CNAE_PARTNER    LS_TXT-CRT_BUPLA       LS_TXT-CRT_PARTNER    LS_TXT-ISUF
+                              LS_TXT-MODFRETE       LS_TXT-PLACA          LS_TXT-UF1              LS_TXT-RNTC              LS_TXT-VAGAO           LS_TXT-BALSA           LS_TXT-NFAT           LS_TXT-VORIG        LS_TXT-VDESC LS_TXT-VLIQ  LS_TXT-UFEMBARQ
+                              LS_TXT-XLOCEMBARQ     LS_TXT-XNEMP          LS_TXT-SPRAS_BUPLA      LS_TXT-IND_EMIT          LS_TXT-COD_SIT         LS_TXT-IND_FINAL       LS_TXT-IND_PRES       LS_TXT-XLOCDESPACHO      LS_TXT-DCOMPET
+                              LS_TXT-CREGTRIB       LS_TXT-RETTRANSP_CFOP LS_TXT-RETTRANSP_CMUNFG LS_TXT-IND_BADI_CTRL     LS_TXT-ID_DEST         LS_TXT-HEMI            LS_TXT-V_TROCO        LS_TXT-MOD          LS_TXT-NCOO
+                              LS_TXT-INDINTERMED    LS_TXT-IDCADINTTRAN   LS_TXT-CNPJINTERMED     LS_TXT-SAFRA             LS_TXT-REF_MONTH_YEAR  LS_TXT-QTOTMES         LS_TXT-QTOTANT        LS_TXT-QTOTGER      LS_TXT-VFOR
+                              LS_TXT-VTOTDED        LS_TXT-VLIQFOR        LS_TXT-ITMF_REPDAT      LS_TXT-ITMF_PCO_CATEGORY LS_TXT-PARTR           LS_TXT-NFNUM_UTILITIES LS_TXT-PARTNER_ROLE   LS_TXT-COD_CTA_HEADER
+                              LS_TXT-ZZAUTH_DOC     LS_TXT-ZZCOD_DIG      LS_TXT-ZZCHECOD.
+
+
+      APPEND LS_TXT TO T_TXT.
+      MODIFY ZZJ1BNFDOC FROM TABLE T_TXT.
+      COMMIT WORK AND WAIT.
+    ENDLOOP.
+  ENDIF.
+
+ENDFORM.
